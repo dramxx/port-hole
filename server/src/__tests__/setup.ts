@@ -1,0 +1,2 @@
+// Jest global setup
+export {}

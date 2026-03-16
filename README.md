@@ -1,6 +1,6 @@
 # port-hole
 
-Control OpenCode running on your home PC from a phone PWA, via a secure Tailscale tunnel. Send prompts, monitor agent activity in real time, resolve pending approvals — from anywhere.
+Control OpenCode running on your home PC from a modern React PWA, via a secure Tailscale tunnel. Send prompts, monitor agent activity in real time, resolve pending approvals — from anywhere.
 
 ## What It Does
 
@@ -8,7 +8,7 @@ Control OpenCode running on your home PC from a phone PWA, via a secure Tailscal
 - **Real-time Updates**: See agent responses stream in real-time via Server-Sent Events
 - **Approvals on the Go**: Review and approve permission requests from your phone
 - **Secure Tunnel**: Uses Tailscale for encrypted, private networking between devices
-- **Zero Install**: PWA runs in browser — no app store download required
+- **Modern React PWA**: Clean, responsive interface with instant updates and better UX
 
 ## Architecture
 
@@ -17,13 +17,13 @@ OpenCode HTTP API (localhost:4096)
          ↕  localhost only
 Bridge Server (0.0.0.0:3000)
          ↕  Tailscale private network
-Phone Browser PWA
+Phone Browser React PWA
 ```
 
 - **OpenCode**: Runs as HTTP server on your PC, never exposed to network
 - **Bridge Server**: Node.js process that manages OpenCode, stores events, serves PWA
 - **Tailscale**: Secure VPN tunnel between your PC and phone
-- **PWA**: Single-page web app that runs in browser, can be added to home screen
+- **React PWA**: Modern single-page web app with React, Tailwind CSS, and real-time updates
 
 ## Prerequisites
 
@@ -76,18 +76,11 @@ winget install OpenJS.NodeJS.LTS
 1. Clone this repository
 2. Navigate to server directory: `cd port-hole/server`
 3. Install dependencies: `npm install`
+4. Navigate to React PWA directory: `cd port-hole/pwa-react`
+5. Install dependencies: `npm install`
+6. Build the React PWA: `npm run build`
 
 ## Running the App
-
-### One-Time Setup - Create Icons
-
-```powershell
-# From project root
-magick -size 192x192 xc:#6366f1 pwa/icon-192.png
-magick -size 512x512 xc:#6366f1 pwa/icon-512.png
-```
-
-(Install ImageMagick with `winget install ImageMagick.ImageMagick` if needed)
 
 ### Start OpenCode HTTP Server
 
@@ -193,8 +186,10 @@ port-hole/
 ├── server/           # Node.js bridge server
 │   ├── src/         # TypeScript source
 │   └── __tests__/   # Jest tests
+├── pwa-react/       # React PWA frontend
+│   ├── src/         # React components and hooks
+│   └── dist/        # Built production files
 ├── e2e/             # Playwright E2E tests
-├── pwa/             # Single-page web app
 └── PLAN.md          # Detailed technical specification
 ```
 

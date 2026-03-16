@@ -7,7 +7,7 @@
 
 ## 1. Prerequisites & Setup
 
-### What You Already Have
+### What You Already Might Have
 
 - OpenCode installed and configured with models
 - A Windows PC that will run continuously during sessions
@@ -63,16 +63,14 @@ Get-NetFirewallRule -DisplayName "port-hole Bridge"
 
 ---
 
-### 1.4 Tailscale — iPhone
+### 1.4 Tailscale — Phone (iOS/Android)
 
-1. Download Tailscale from the App Store: https://apps.apple.com/app/tailscale/id1470499037
+1. Download Tailscale
 2. Open the app, sign in with the **same account** you created on PC
 3. Tap the toggle to connect
 4. You should see your PC listed as a connected device with its Tailscale IP
 
-**Verify:** In the Tailscale app on iPhone, your PC shows as `Connected`.
-
-**Test the full tunnel:** With the bridge server running (section 3.6), open Safari on iPhone and navigate to `http://100.x.x.x:3000/` using your actual Tailscale IP. If the PWA loads, the tunnel is working.
+**Verify:** In the Tailscale app on phone, your PC shows as `Connected`.
 
 ---
 
@@ -133,6 +131,8 @@ View the full interactive API spec at:
 
 ```
 http://localhost:4096/doc
+
+
 ```
 
 ### Key API Reference
@@ -1100,8 +1100,8 @@ cd port-hole/server
 npx tsx src/index.ts
 ```
 
-**Access from iPhone:**
-Open the Tailscale URL printed on startup in Safari. Add to home screen for best experience.
+**Access from Phone:**
+Open the Tailscale URL printed on startup in your browser. Add to home screen for best experience.
 
 ---
 

@@ -7,7 +7,9 @@ import { ApprovalPanel } from "./ApprovalPanel";
 import { PromptInput } from "./PromptInput";
 
 export const ChatInterface = () => {
-  const { sessions, currentSessionId, setCurrentSessionId } = useAppStore();
+  const sessions = useAppStore((state) => state.sessions);
+  const currentSessionId = useAppStore((state) => state.currentSessionId);
+  const setCurrentSessionId = useAppStore((state) => state.setCurrentSessionId);
 
   const { fetchSessions, fetchMessages, isLoading, error } = useAPI();
 

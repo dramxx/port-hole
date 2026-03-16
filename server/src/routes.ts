@@ -8,6 +8,141 @@ import * as process from "./process";
 
 const PWA_DIR = path.join(__dirname, "..", "..", "pwa-react", "dist");
 
+interface ClientMessagePart {
+  type: "text" | "reasoning" | "tool";
+  text?: string;
+  name?: string;
+  status?: string;
+  input?: unknown;
+  output?: string;
+}
+
+interface ClientMessage {
+  id: string;
+  role: string;
+  timestamp: number;
+  parts: ClientMessagePart[];
+}
+
+function hasDisplayText(value: unknown): value is string {
+  return typeof value === "string" && value.trim() !== "";
+}
+
+function stringifyValue(value: unknown): string | undefined {
+  if (value === undefined || value === null) {
+    return undefined;
+  }
+
+  if (typeof value === "string") {
+    return value.trim() === "" ? undefined : value;
+  }
+
+  try {
+    return JSON.stringify(value, null, 2);
+  } catch {
+    return String(value);
+  }
+}
+
+function normalizePart(
+  part: opencode.OpenCodeMessagePart,
+): ClientMessagePart[] {
+  const type = part.type ?? "";
+
+  if (type === "text" && hasDisplayText(part.text)) {
+    return [{ type: "text", text: part.text }];
+  }
+
+  if (type === "reasoning" && hasDisplayText(part.text)) {
+    return [{ type: "reasoning", text: part.text }];
+  }
+
+  if (
+    type === "tool" ||
+    type === "tool_use" ||
+    type === "tool_result" ||
+    type === "tool_code" ||
+    type === "patch"
+  ) {
+    const name =
+      (typeof part.name === "string" && part.name) ||
+      (typeof part.tool === "string" && part.tool) ||
+      (typeof part.callID === "string" && part.callID) ||
+      type;
+    const input = part.input ?? part.state?.input;
+    const output =
+      stringifyValue(part.output) ??
+      stringifyValue(part.content) ??
+      stringifyValue(part.state?.output) ??
+      stringifyValue(part.state?.result) ??
+      (hasDisplayText(part.text) ? part.text : undefined);
+
+    if (input === undefined && output === undefined) {
+      return [];
+    }
+
+    return [
+      {
+        type: "tool",
+        name,
+        status:
+          typeof part.state?.status === "string"
+            ? part.state.status
+            : undefined,
+        input,
+        output,
+      },
+    ];
+  }
+
+  if (hasDisplayText(part.text)) {
+    return [{ type: "text", text: part.text }];
+  }
+
+  const output = stringifyValue(part.content);
+  if (!output) {
+    return [];
+  }
+
+  return [
+    {
+      type: "tool",
+      name: type || "part",
+      output,
+    },
+  ];
+}
+
+function normalizeMessages(
+  messages: opencode.OpenCodeMessage[],
+): ClientMessage[] {
+  return messages
+    .map((message, index) => {
+      const parts = Array.isArray(message.parts)
+        ? message.parts.flatMap(normalizePart)
+        : [];
+      const role =
+        message.info?.role ??
+        message.role ??
+        (parts.length > 0 ? "assistant" : "unknown");
+      const timestamp =
+        message.info?.time?.created ??
+        message.info?.time?.updated ??
+        message.timestamp ??
+        Date.now();
+      const id =
+        message.info?.id ?? message.id ?? `${role}-${timestamp}-${index}`;
+
+      return {
+        id,
+        role,
+        timestamp,
+        parts,
+      };
+    })
+    .filter((message) => message.parts.length > 0);
+}
+
 export async function registerRoutes(app: FastifyInstance): Promise<void> {
   // SSE stream must be registered BEFORE static files
   app.get("/stream", { logLevel: "warn" }, (req, reply) => {
@@ -46,7 +181,7 @@ export async function registerRoutes(app: FastifyInstance): Promise<void> {
     async (req, reply) => {
       try {
         const messages = await opencode.getMessages(req.params.id);
-        return messages;
+        return normalizeMessages(messages);
       } catch (error: any) {
         if (error instanceof opencode.OpenCodeError) {
           return reply.status(error.status).send({ error: error.message });
@@ -60,22 +195,17 @@ export async function registerRoutes(app: FastifyInstance): Promise<void> {
     "/api/sessions/:id/prompt",
     async (req, reply) => {
       try {
-        console.log("Bridge received prompt request:", req.params.id, req.body);
         const { text } = req.body;
 
         if (!text || typeof text !== "string" || text.trim() === "") {
-          console.log("Bridge rejecting empty prompt");
           return reply
             .status(400)
             .send({ error: "text is required and must be a non-empty string" });
         }
 
-        console.log("Bridge calling opencode.sendPrompt");
         await opencode.sendPrompt(req.params.id, text);
-        console.log("Bridge opencode.sendPrompt completed");
         return reply.status(204).send();
       } catch (error: any) {
-        console.log("Bridge prompt error:", error);
         if (error instanceof opencode.OpenCodeError) {
           return reply.status(error.status).send({ error: error.message });
         }

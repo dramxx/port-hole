@@ -4,7 +4,8 @@ import { useAppStore } from "../stores/appStore";
 import { useAPI } from "../hooks/useAPI";
 
 export const ApprovalPanel = () => {
-  const { approvals, removeApproval } = useAppStore();
+  const approvals = useAppStore((state) => state.approvals);
+  const removeApproval = useAppStore((state) => state.removeApproval);
   const { sendApproval } = useAPI();
 
   const pendingApprovals = Array.from(approvals.values()).filter(

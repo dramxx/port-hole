@@ -91,64 +91,93 @@ const normalizeApproval = (approval) => {
 }
 
 export const useSSE = () => {
-  const {
-    currentSessionId,
-    setConnected,
-    setStatus,
-    setMessages,
-    setApproval,
-    setApprovals,
-    removeApproval,
-  } = useAppStore()
+  const currentSessionId = useAppStore((state) => state.currentSessionId)
+  const setConnected = useAppStore((state) => state.setConnected)
+  const setStatus = useAppStore((state) => state.setStatus)
+  const setMessages = useAppStore((state) => state.setMessages)
+  const setApproval = useAppStore((state) => state.setApproval)
+  const setApprovals = useAppStore((state) => state.setApprovals)
+  const removeApproval = useAppStore((state) => state.removeApproval)
 
   const eventSourceRef = useRef(null)
   const refreshTimeoutRef = useRef(null)
+  const refreshAbortRef = useRef(null)
+  const refreshSequenceRef = useRef(0)
   const currentSessionIdRef = useRef(currentSessionId)
 
   useEffect(() => {
     currentSessionIdRef.current = currentSessionId
   }, [currentSessionId])
 
-  const refreshMessages = useCallback(async (sessionId) => {
-    if (!sessionId) {
-      return
-    }
-
-    try {
-      const response = await fetch(`/api/sessions/${sessionId}/messages`)
-      if (!response.ok) {
-        throw new Error('Failed to refresh messages')
+  const refreshMessages = useCallback(
+    async (sessionId) => {
+      if (!sessionId) {
+        return
       }
 
-      const messages = await response.json()
-      if (currentSessionIdRef.current === sessionId) {
-        setMessages(messages)
+      const requestSequence = refreshSequenceRef.current + 1
+      refreshSequenceRef.current = requestSequence
+      refreshAbortRef.current?.abort()
+      const controller = new AbortController()
+      refreshAbortRef.current = controller
+
+      try {
+        const response = await fetch(`/api/sessions/${sessionId}/messages`, {
+          cache: 'no-store',
+          signal: controller.signal,
+        })
+        if (!response.ok) {
+          throw new Error('Failed to refresh messages')
+        }
+
+        const messages = await response.json()
+        if (
+          !controller.signal.aborted &&
+          requestSequence === refreshSequenceRef.current &&
+          currentSessionIdRef.current === sessionId
+        ) {
+          setMessages(messages)
+        }
+      } catch (error) {
+        if (error?.name === 'AbortError') {
+          return
+        }
+        console.error('Failed to refresh messages:', error)
+      } finally {
+        if (refreshAbortRef.current === controller) {
+          refreshAbortRef.current = null
+        }
       }
-    } catch (error) {
-      console.error('Failed to refresh messages:', error)
-    }
-  }, [setMessages])
+    },
+    [setMessages],
+  )
 
-  const scheduleRefresh = useCallback((sessionId) => {
-    if (!sessionId || sessionId !== currentSessionIdRef.current) {
-      return
-    }
+  const scheduleRefresh = useCallback(
+    (sessionId) => {
+      if (!sessionId || sessionId !== currentSessionIdRef.current) {
+        return
+      }
 
-    if (refreshTimeoutRef.current) {
-      clearTimeout(refreshTimeoutRef.current)
-    }
+      if (refreshTimeoutRef.current) {
+        clearTimeout(refreshTimeoutRef.current)
+      }
 
-    refreshTimeoutRef.current = setTimeout(() => {
-      refreshTimeoutRef.current = null
-      refreshMessages(sessionId)
-    }, 150)
-  }, [refreshMessages])
+      refreshTimeoutRef.current = setTimeout(() => {
+        refreshTimeoutRef.current = null
+        refreshMessages(sessionId)
+      }, 150)
+    },
+    [refreshMessages],
+  )
 
   const disconnect = useCallback(() => {
     if (refreshTimeoutRef.current) {
       clearTimeout(refreshTimeoutRef.current)
       refreshTimeoutRef.current = null
     }
+
+    refreshAbortRef.current?.abort()
+    refreshAbortRef.current = null
 
     if (eventSourceRef.current) {
       eventSourceRef.current.close()
@@ -166,6 +195,9 @@ export const useSSE = () => {
     es.addEventListener('connected', () => {
       setConnected(true)
       setStatus('connected')
+      if (currentSessionIdRef.current) {
+        scheduleRefresh(currentSessionIdRef.current)
+      }
     })
 
     es.addEventListener('approvals', (e) => {
@@ -221,8 +253,17 @@ export const useSSE = () => {
         clearTimeout(refreshTimeoutRef.current)
         refreshTimeoutRef.current = null
       }
+      refreshAbortRef.current?.abort()
+      refreshAbortRef.current = null
     }
-  }, [removeApproval, scheduleRefresh, setApproval, setApprovals, setConnected, setStatus])
+  }, [
+    removeApproval,
+    scheduleRefresh,
+    setApproval,
+    setApprovals,
+    setConnected,
+    setStatus,
+  ])
 
   return { disconnect }
 }

@@ -5,8 +5,10 @@ import { useAppStore } from "../stores/appStore";
 import { useAPI } from "../hooks/useAPI";
 
 export const PromptInput = () => {
-  const { currentSessionId, promptInput, setPromptInput, setSending } =
-    useAppStore();
+  const currentSessionId = useAppStore((state) => state.currentSessionId);
+  const promptInput = useAppStore((state) => state.promptInput);
+  const setPromptInput = useAppStore((state) => state.setPromptInput);
+  const setSending = useAppStore((state) => state.setSending);
 
   const { sendPrompt, abortSession } = useAPI();
   const [isSending, setIsSendingLocal] = useState(false);
@@ -32,7 +34,7 @@ export const PromptInput = () => {
     await abortSession(currentSessionId);
   };
 
-  const handleKeyPress = (e) => {
+  const handleKeyDown = (e) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       handleSend();
@@ -46,7 +48,7 @@ export const PromptInput = () => {
           type="text"
           value={promptInput}
           onChange={(e) => setPromptInput(e.target.value)}
-          onKeyPress={handleKeyPress}
+          onKeyDown={handleKeyDown}
           placeholder={
             currentSessionId ? "Type your prompt..." : "Select a session..."
           }

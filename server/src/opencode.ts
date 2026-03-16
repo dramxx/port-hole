@@ -22,11 +22,43 @@ export interface Session {
   updatedAt: number;
 }
 
-export interface MessageWithParts {
-  id: string;
-  role: string;
-  parts: Array<{ type: string; text?: string; [key: string]: any }>;
-  timestamp: number;
+export interface OpenCodeMessagePart {
+  type?: string;
+  text?: string;
+  content?: unknown;
+  input?: unknown;
+  output?: unknown;
+  name?: string;
+  tool?: string;
+  callID?: string;
+  state?: {
+    status?: string;
+    input?: unknown;
+    output?: unknown;
+    result?: unknown;
+    [key: string]: unknown;
+  };
+  [key: string]: any;
+}
+
+export interface OpenCodeMessageInfo {
+  id?: string;
+  role?: string;
+  time?: {
+    created?: number;
+    updated?: number;
+    [key: string]: unknown;
+  };
+  [key: string]: any;
+}
+
+export interface OpenCodeMessage {
+  id?: string;
+  role?: string;
+  timestamp?: number;
+  info?: OpenCodeMessageInfo;
+  parts?: OpenCodeMessagePart[];
+  [key: string]: any;
 }
 
 export async function health(): Promise<{ healthy: boolean; version: string }> {
@@ -71,7 +103,7 @@ export async function getSessions(): Promise<Session[]> {
 
 export async function getMessages(
   sessionId: string,
-): Promise<MessageWithParts[]> {
+): Promise<OpenCodeMessage[]> {
   const response = await fetch(`${BASE_URL}/session/${sessionId}/message`);
 
   if (!response.ok) {

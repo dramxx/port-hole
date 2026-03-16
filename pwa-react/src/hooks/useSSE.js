@@ -200,6 +200,15 @@ export const useSSE = () => {
       }
     })
 
+    es.addEventListener('history', (e) => {
+      const data = JSON.parse(e.data)
+      console.log('History event received:', data)
+      if (data.events && Array.isArray(data.events)) {
+        // Convert events to message format and set messages
+        setMessages(data.events)
+      }
+    })
+
     es.addEventListener('approvals', (e) => {
       const data = JSON.parse(e.data)
       const approvals = (data.approvals || [])

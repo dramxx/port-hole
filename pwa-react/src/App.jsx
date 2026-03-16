@@ -1,5 +1,7 @@
 import { useEffect } from "react";
+import { TopBar } from "./components/TopBar";
 import { ChatInterface } from "./components/ChatInterface";
+import { PromptInput } from "./components/PromptInput";
 import { useSSE } from "./hooks/useSSE";
 
 function App() {
@@ -12,8 +14,21 @@ function App() {
   }, [disconnect]);
 
   return (
-    <div className="h-screen bg-dark text-dark-text flex flex-col">
-      <ChatInterface />
+    <div className="h-screen-keyboard-safe bg-dark text-dark-text flex flex-col">
+      {/* Fixed TopBar */}
+      <div className="flex-shrink-0">
+        <TopBar />
+      </div>
+
+      {/* Scrollable content area */}
+      <div className="flex-1 overflow-hidden flex flex-col min-h-0">
+        <ChatInterface />
+      </div>
+
+      {/* Fixed bottom prompt area */}
+      <div className="flex-shrink-0 border-t border-dark-border bg-dark-secondary">
+        <PromptInput />
+      </div>
     </div>
   );
 }

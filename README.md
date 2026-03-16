@@ -2,29 +2,6 @@
 
 Control OpenCode running on your home PC from a modern React PWA, via a secure Tailscale tunnel. Send prompts, monitor agent activity in real time, resolve pending approvals — from anywhere.
 
-## What It Does
-
-- **Remote Control**: Access OpenCode from your phone without exposing it to the public internet
-- **Real-time Updates**: See agent responses stream in real-time via Server-Sent Events
-- **Approvals on the Go**: Review and approve permission requests from your phone
-- **Secure Tunnel**: Uses Tailscale for encrypted, private networking between devices
-- **Modern React PWA**: Clean, responsive interface with instant updates and better UX
-
-## Architecture
-
-```
-OpenCode HTTP API (localhost:4096)
-         ↕  localhost only
-Bridge Server (0.0.0.0:3000)
-         ↕  Tailscale private network
-Phone Browser React PWA
-```
-
-- **OpenCode**: Runs as HTTP server on your PC, never exposed to network
-- **Bridge Server**: Node.js process that manages OpenCode, stores events, serves PWA
-- **Tailscale**: Secure VPN tunnel between your PC and phone
-- **React PWA**: Modern single-page web app with React, Tailwind CSS, and real-time updates
-
 ## Prerequisites
 
 ### What You Need
@@ -112,93 +89,6 @@ Tailscale: http://100.x.x.x:3000
 1. Open browser on your phone
 2. Navigate to the Tailscale URL shown above
 3. Tap Share → Add to Home Screen for best experience
-
-## Usage
-
-### Sending Prompts
-
-1. Select a session from the dropdown (auto-selects most recent)
-2. Type your prompt in the textarea
-3. Press Send or use Enter (Shift+Enter for newline)
-4. Watch the response stream in real-time
-
-### Managing Approvals
-
-- When OpenCode needs approval, a yellow panel appears
-- Review the description and tap **Allow** or **Deny**
-- Cards show elapsed time and disappear when resolved
-
-### Monitoring Activity
-
-- Status dot shows connection: green (connected), red (disconnected), yellow (reconnecting)
-- Chat view shows all messages with timestamps
-- Tool calls and results are collapsible for clean reading
-- Code blocks have copy buttons
-
-## Troubleshooting
-
-### Bridge Server Won't Start
-
-- Check Node.js is installed: `node --version`
-- Verify dependencies: `npm install`
-- Check port 3000 isn't in use
-
-### Can't Connect from Phone
-
-- Verify Tailscale is connected on both devices
-- Check firewall rule allows port 3000
-- Use the exact Tailscale IP shown by bridge server
-
-### OpenCode Not Responding
-
-- Verify OpenCode HTTP server is running on port 4096
-- Check `opencode.log` file in project root for errors
-- Bridge server will auto-restart OpenCode if it crashes
-
-### Status Shows Disconnected
-
-- Check Tailscale connection on phone
-- Verify bridge server is running
-- Try refreshing the PWA page
-
-## Development
-
-### Running Tests
-
-```bash
-# Unit and integration tests
-npm test
-
-# With coverage
-npm run test:coverage
-
-# E2E tests (requires Playwright browsers)
-npm run test:e2e
-
-# All tests
-npm run test:all
-```
-
-### Project Structure
-
-```
-port-hole/
-├── server/           # Node.js bridge server
-│   ├── src/         # TypeScript source
-│   └── __tests__/   # Jest tests
-├── pwa-react/       # React PWA frontend
-│   ├── src/         # React components and hooks
-│   └── dist/        # Built production files
-├── e2e/             # Playwright E2E tests
-└── PLAN.md          # Detailed technical specification
-```
-
-## Security Considerations
-
-- OpenCode is bound to `127.0.0.1` — never exposed to internet
-- Tailscale provides end-to-end encryption
-- Bridge server serves PWA on same origin — no CORS issues
-- Optional OpenCode password protection supported
 
 ## Limitations (v1)
 

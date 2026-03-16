@@ -1,4 +1,4 @@
-import { Send, Square, RefreshCw } from "lucide-react";
+import { Send, Square, RefreshCw, X, StopCircle } from "lucide-react";
 import { useState } from "react";
 import { clsx } from "clsx";
 import { useAppStore } from "../stores/appStore";
@@ -83,15 +83,16 @@ export const PromptInput = () => {
           onClick={handleAbort}
           disabled={!currentSessionId}
           className={clsx(
-            "px-4 py-2 rounded-lg text-sm font-medium",
+            "p-2 rounded-lg text-sm font-medium",
             "bg-red-600 hover:bg-red-700 text-white",
             "transition-colors duration-200",
             "disabled:opacity-50 disabled:cursor-not-allowed",
-            "flex items-center gap-2",
+            "flex items-center justify-center",
+            "min-w-[44px] min-h-[44px]", // Touch-friendly size
           )}
+          title="Abort session"
         >
-          <Square className="w-4 h-4" />
-          Abort
+          <StopCircle className="w-5 h-5" />
         </button>
       </div>
     </div>

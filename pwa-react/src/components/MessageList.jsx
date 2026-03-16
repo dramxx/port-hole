@@ -152,11 +152,7 @@ export const MessageList = () => {
   }
 
   return (
-    <div
-      ref={containerRef}
-      onScroll={handleScroll}
-      className="flex-1 overflow-y-auto custom-scrollbar p-4 space-y-4"
-    >
+    <div ref={containerRef} onScroll={handleScroll} className="p-4 space-y-4">
       {messages.map((message, index) => {
         const role = message.role || "unknown";
         const timestamp = message.timestamp;

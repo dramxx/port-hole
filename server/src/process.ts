@@ -25,7 +25,8 @@ async function checkHealth(): Promise<boolean> {
     console.log("Health check result:", result);
     return result.healthy === true;
   } catch (error) {
-    console.log("Health check failed:", error.message);
+    const message = error instanceof Error ? error.message : String(error);
+    console.log("Health check failed:", message);
     return false;
   }
 }

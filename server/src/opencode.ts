@@ -120,11 +120,6 @@ export async function sendPrompt(
   sessionId: string,
   text: string,
 ): Promise<void> {
-  console.log(
-    `Bridge sending to OpenCode: ${BASE_URL}/session/${sessionId}/prompt_async`,
-  );
-  console.log("Bridge prompt data:", { parts: [{ type: "text", text }] });
-
   const response = await fetch(
     `${BASE_URL}/session/${sessionId}/prompt_async`,
     {
@@ -136,17 +131,12 @@ export async function sendPrompt(
     },
   );
 
-  console.log("Bridge OpenCode response status:", response.status);
   if (!response.ok) {
-    const errorText = await response.text();
-    console.log("Bridge OpenCode error:", errorText);
     throw new OpenCodeError(
       response.status,
       `Failed to send prompt: ${response.statusText}`,
     );
   }
-
-  console.log("Bridge prompt sent successfully");
 }
 
 export async function approvePermission(

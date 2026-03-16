@@ -3,7 +3,7 @@
 @tailwind utilities;
 
 body {
-  @apply bg-dark text-dark-text h-screen overflow-hidden;
+  @apply bg-dark text-white h-screen overflow-hidden font-mono;
   padding-top: env(safe-area-inset-top);
   padding-bottom: env(safe-area-inset-bottom);
   padding-left: env(safe-area-inset-left);
@@ -24,11 +24,11 @@ body {
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb {
-  @apply bg-dark-tertiary rounded-full;
+  @apply bg-purple-dark rounded-full;
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-  @apply bg-dark-border;
+  @apply bg-purple;
 }
 
 /* Mobile keyboard viewport fix */

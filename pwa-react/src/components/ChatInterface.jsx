@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { useAppStore } from "../stores/appStore";
 import { useAPI } from "../hooks/useAPI";
 import { MessageList } from "./MessageList";
@@ -7,9 +7,21 @@ import { ApprovalPanel } from "./ApprovalPanel";
 export const ChatInterface = () => {
   const { fetchSessions, fetchMessages, isLoading, error } = useAPI();
   const currentSessionId = useAppStore((state) => state.currentSessionId);
+  const messages = useAppStore((state) => state.messages);
+  const containerRef = useRef(null);
 
   useEffect(() => {
-    fetchSessions();
+    fetchSessions({ preferLatest: true });
+  }, [fetchSessions]);
+
+  useEffect(() => {
+    const intervalId = window.setInterval(() => {
+      fetchSessions({ preferLatest: true });
+    }, 3000);
+
+    return () => {
+      window.clearInterval(intervalId);
+    };
   }, [fetchSessions]);
 
   useEffect(() => {
@@ -17,6 +29,18 @@ export const ChatInterface = () => {
       fetchMessages(currentSessionId);
     }
   }, [currentSessionId, fetchMessages]);
+
+  // Auto-scroll to bottom on new messages
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) {
+      return;
+    }
+
+    requestAnimationFrame(() => {
+      container.scrollTop = container.scrollHeight;
+    });
+  }, [currentSessionId, messages]);
 
   if (error) {
     return (
@@ -52,9 +76,11 @@ export const ChatInterface = () => {
   }
 
   return (
-    <div className="flex-1 overflow-y-auto custom-scrollbar">
+    <div ref={containerRef} className="h-full overflow-y-auto custom-scrollbar">
       <ApprovalPanel />
       <MessageList />
+      {/* Spacer to prevent content from being hidden behind prompt bar */}
+      <div className="h-20"></div>
     </div>
   );
 };

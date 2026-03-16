@@ -63,7 +63,9 @@ export const useAPI = () => {
     [setMessages],
   )
 
-  const fetchSessions = useCallback(async () => {
+  const fetchSessions = useCallback(async (options = {}) => {
+    const { preferLatest = false } = options
+
     try {
       setIsLoading(true)
       setError(null)
@@ -81,20 +83,34 @@ export const useAPI = () => {
       setSessions(sortedSessions)
 
       if (sortedSessions.length === 0) {
-        setCurrentSessionId(null)
+        setCurrentSessionId(null, 'auto')
         setMessages([])
         return []
       }
 
-      const currentSelectedId = useAppStore.getState().currentSessionId
-      const selectedSessionId = sortedSessions.some(
+      const {
+        currentSessionId: currentSelectedId,
+        sessionSelectionMode,
+      } = useAppStore.getState()
+      const sessionExists = sortedSessions.some(
         (session) => session.id === currentSelectedId,
       )
-        ? currentSelectedId
-        : sortedSessions[0].id
+      let selectedSessionId = currentSelectedId
+      let selectedMode = sessionSelectionMode
 
-      if (selectedSessionId !== currentSelectedId) {
-        setCurrentSessionId(selectedSessionId)
+      if (!sessionExists) {
+        selectedSessionId = sortedSessions[0].id
+        selectedMode = 'auto'
+      } else if (preferLatest && sessionSelectionMode !== 'manual') {
+        selectedSessionId = sortedSessions[0].id
+        selectedMode = 'auto'
+      }
+
+      if (
+        selectedSessionId !== currentSelectedId ||
+        selectedMode !== sessionSelectionMode
+      ) {
+        setCurrentSessionId(selectedSessionId, selectedMode)
       }
 
       return sortedSessions

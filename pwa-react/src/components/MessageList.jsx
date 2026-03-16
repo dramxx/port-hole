@@ -1,6 +1,5 @@
 import { Clock, User, Bot, AlertCircle } from "lucide-react";
 import { clsx } from "clsx";
-import { useEffect, useRef } from "react";
 import { useAppStore } from "../stores/appStore";
 
 const formatToolValue = (value) => {
@@ -13,30 +12,6 @@ const formatToolValue = (value) => {
 
 export const MessageList = () => {
   const messages = useAppStore((state) => state.messages);
-  const containerRef = useRef(null);
-  const shouldStickToBottomRef = useRef(true);
-
-  useEffect(() => {
-    const container = containerRef.current;
-    if (!container || !shouldStickToBottomRef.current) {
-      return;
-    }
-
-    requestAnimationFrame(() => {
-      container.scrollTop = container.scrollHeight;
-    });
-  }, [messages]);
-
-  const handleScroll = () => {
-    const container = containerRef.current;
-    if (!container) {
-      return;
-    }
-
-    const distanceFromBottom =
-      container.scrollHeight - container.scrollTop - container.clientHeight;
-    shouldStickToBottomRef.current = distanceFromBottom < 50;
-  };
 
   const formatTime = (timestamp) => {
     if (!timestamp) {
@@ -63,11 +38,11 @@ export const MessageList = () => {
   const getRoleClass = (role) => {
     switch (role) {
       case "user":
-        return "bg-blue-900 ml-auto max-w-[80%]";
+        return "bg-purple/20 ml-auto max-w-[80%] border-l-2 border-purple";
       case "assistant":
         return "bg-dark-secondary max-w-[80%]";
       default:
-        return "bg-gray-800 max-w-[80%]";
+        return "bg-dark-tertiary max-w-[80%]";
     }
   };
 
@@ -92,7 +67,7 @@ export const MessageList = () => {
           return (
             <div
               key={key}
-              className="rounded border-l-2 border-blue-500 bg-blue-950/30 px-3 py-2 text-sm text-blue-100 whitespace-pre-wrap break-words"
+              className="rounded border-l-2 border-yellow-400 bg-yellow-400/10 px-3 py-2 text-sm text-yellow-200 whitespace-pre-wrap break-words font-mono"
             >
               {part.text}
             </div>
@@ -104,27 +79,30 @@ export const MessageList = () => {
           const toolOutput = formatToolValue(part.output);
 
           return (
-            <details key={key} className="rounded bg-dark-tertiary p-2">
-              <summary className="cursor-pointer text-sm font-mono">
+            <details
+              key={key}
+              className="rounded bg-dark-tertiary/50 border border-dark-border p-2"
+            >
+              <summary className="cursor-pointer text-xs font-mono text-purple hover:text-purple-light">
                 🔧 {part.name || "Tool"}
                 {part.status ? ` (${part.status})` : ""}
               </summary>
               {toolInput ? (
                 <div className="mt-2">
-                  <div className="mb-1 text-xs uppercase tracking-wide text-dark-muted">
+                  <div className="mb-1 text-xs uppercase tracking-wide text-dark-muted font-mono">
                     Input
                   </div>
-                  <pre className="text-xs whitespace-pre-wrap break-words">
+                  <pre className="text-xs whitespace-pre-wrap break-words font-mono text-dark-muted">
                     {toolInput}
                   </pre>
                 </div>
               ) : null}
               {toolOutput ? (
                 <div className="mt-2">
-                  <div className="mb-1 text-xs uppercase tracking-wide text-dark-muted">
+                  <div className="mb-1 text-xs uppercase tracking-wide text-dark-muted font-mono">
                     Output
                   </div>
-                  <pre className="text-xs whitespace-pre-wrap break-words">
+                  <pre className="text-xs whitespace-pre-wrap break-words font-mono text-dark-muted">
                     {toolOutput}
                   </pre>
                 </div>
@@ -152,7 +130,7 @@ export const MessageList = () => {
   }
 
   return (
-    <div ref={containerRef} onScroll={handleScroll} className="p-4 space-y-4">
+    <div className="p-4 space-y-4">
       {messages.map((message, index) => {
         const role = message.role || "unknown";
         const timestamp = message.timestamp;

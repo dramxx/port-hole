@@ -14,19 +14,19 @@ function App() {
   }, [disconnect]);
 
   return (
-    <div className="h-screen-keyboard-safe bg-dark text-dark-text flex flex-col">
-      {/* Fixed TopBar */}
-      <div className="flex-shrink-0">
+    <div className="h-screen-keyboard-safe bg-dark text-white flex flex-col">
+      {/* Fixed TopBar - stuck to top */}
+      <div className="flex-shrink-0 sticky top-0 z-50">
         <TopBar />
       </div>
 
-      {/* Scrollable content area */}
-      <div className="flex-1 overflow-hidden flex flex-col min-h-0">
+      {/* Scrollable content area - takes remaining space */}
+      <div className="flex-1 overflow-hidden">
         <ChatInterface />
       </div>
 
-      {/* Fixed bottom prompt area */}
-      <div className="flex-shrink-0 border-t border-dark-border bg-dark-secondary">
+      {/* Fixed bottom prompt area - stuck to bottom */}
+      <div className="flex-shrink-0 sticky bottom-0 z-40">
         <PromptInput />
       </div>
     </div>

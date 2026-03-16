@@ -18,6 +18,7 @@ export interface ApprovalEntry {
 
 const eventLog: EventLogEntry[] = [];
 const approvalQueue = new Map<string, ApprovalEntry>();
+const MAX_EVENT_LOG_SIZE = 500;
 
 export function appendEvent(raw: object): EventLogEntry {
   const entry: EventLogEntry = {
@@ -26,6 +27,9 @@ export function appendEvent(raw: object): EventLogEntry {
     raw,
   };
   eventLog.push(entry);
+  if (eventLog.length > MAX_EVENT_LOG_SIZE) {
+    eventLog.splice(0, eventLog.length - MAX_EVENT_LOG_SIZE);
+  }
   return entry;
 }
 

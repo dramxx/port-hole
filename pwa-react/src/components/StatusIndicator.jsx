@@ -10,30 +10,30 @@ export const StatusIndicator = () => {
       case "connected":
         return {
           icon: Wifi,
-          color: "text-green-500",
-          bgColor: "bg-green-500",
+          color: "text-purple",
+          bgColor: "bg-purple",
           text: "Connected",
         };
       case "reconnecting":
         return {
           icon: Loader2,
-          color: "text-yellow-500",
-          bgColor: "bg-yellow-500",
+          color: "text-yellow-400",
+          bgColor: "bg-yellow-400",
           text: "Reconnecting",
           animate: true,
         };
       case "error":
         return {
           icon: AlertCircle,
-          color: "text-red-500",
-          bgColor: "bg-red-500",
+          color: "text-red-400",
+          bgColor: "bg-red-400",
           text: "Error",
         };
       default:
         return {
           icon: WifiOff,
-          color: "text-gray-500",
-          bgColor: "bg-gray-500",
+          color: "text-dark-muted",
+          bgColor: "bg-dark-muted",
           text: "Disconnected",
         };
     }
@@ -47,7 +47,7 @@ export const StatusIndicator = () => {
       <div className={clsx("relative", config.animate && "animate-pulse")}>
         <Icon className={clsx("w-5 h-5", config.color)} />
       </div>
-      <span className="text-sm text-dark-muted">{config.text}</span>
+      <span className="text-xs text-dark-muted font-mono">{config.text}</span>
     </div>
   );
 };

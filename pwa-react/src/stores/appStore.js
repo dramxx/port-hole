@@ -10,6 +10,7 @@ export const useAppStore = create(
     // Session state
     sessions: [],
     currentSessionId: null,
+    sessionSelectionMode: 'auto',
     messages: [],
 
     // Approval state
@@ -24,7 +25,8 @@ export const useAppStore = create(
     setStatus: (status) => set({ status }),
 
     setSessions: (sessions) => set({ sessions }),
-    setCurrentSessionId: (id) => set({ currentSessionId: id }),
+    setCurrentSessionId: (id, mode = 'manual') =>
+      set({ currentSessionId: id, sessionSelectionMode: mode }),
 
     setMessages: (messages) => set({ messages }),
     addMessage: (message) => set((state) => ({
@@ -58,6 +60,7 @@ export const useAppStore = create(
       status: 'disconnected',
       sessions: [],
       currentSessionId: null,
+      sessionSelectionMode: 'auto',
       messages: [],
       approvals: new Map(),
       promptInput: '',

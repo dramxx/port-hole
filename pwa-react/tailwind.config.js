@@ -8,12 +8,18 @@ export default {
     extend: {
       colors: {
         dark: {
-          DEFAULT: '#0a0a0a',
-          secondary: '#1a1a1a',
-          tertiary: '#2a2a2a',
-          border: '#333333',
-          text: '#e0e0e0',
-          muted: '#888888'
+          DEFAULT: '#1a1a1a',
+          secondary: '#2d2d2d',
+          tertiary: '#404040',
+          border: '#404040',
+          text: '#ffffff',
+          muted: '#9ca3af'
+        },
+        purple: {
+          DEFAULT: '#8b5cf6',
+          light: '#a78bfa',
+          dark: '#7c3aed',
+          accent: '#8b5cf6'
         }
       }
     },

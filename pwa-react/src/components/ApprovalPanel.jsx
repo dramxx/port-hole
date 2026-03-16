@@ -39,19 +39,19 @@ export const ApprovalPanel = () => {
   }
 
   return (
-    <div className="bg-orange-900 border-b border-orange-800 p-4 max-h-40 overflow-y-auto custom-scrollbar">
+    <div className="bg-yellow-400/10 border-b border-yellow-400/30 p-4 max-h-40 overflow-y-auto custom-scrollbar">
       <div className="space-y-3">
         {pendingApprovals.map((approval) => (
           <div
             key={approval.permissionId}
-            className="bg-orange-950 border border-orange-800 rounded-lg p-3"
+            className="bg-yellow-400/5 border border-yellow-400/20 rounded-lg p-3"
           >
             <div className="flex items-start justify-between">
               <div className="flex-1">
-                <p className="text-sm text-orange-100 mb-2">
+                <p className="text-sm text-yellow-200 mb-2 font-mono">
                   {approval.description || "Unknown permission request"}
                 </p>
-                <div className="flex items-center gap-2 text-xs text-orange-300">
+                <div className="flex items-center gap-2 text-xs text-yellow-300 font-mono">
                   <Clock className="w-3 h-3" />
                   <span>waiting {formatWaitingTime(approval.timestamp)}</span>
                 </div>
@@ -61,7 +61,7 @@ export const ApprovalPanel = () => {
                   onClick={() => handleApproval(approval, true)}
                   disabled={!approval.sessionId || !approval.permissionId}
                   className={clsx(
-                    "px-3 py-1 rounded text-xs font-medium",
+                    "px-3 py-1 rounded text-xs font-medium font-mono",
                     "bg-green-600 hover:bg-green-700 text-white",
                     "transition-colors duration-200",
                     "disabled:opacity-50 disabled:cursor-not-allowed",
@@ -74,7 +74,7 @@ export const ApprovalPanel = () => {
                   onClick={() => handleApproval(approval, false)}
                   disabled={!approval.sessionId || !approval.permissionId}
                   className={clsx(
-                    "px-3 py-1 rounded text-xs font-medium",
+                    "px-3 py-1 rounded text-xs font-medium font-mono",
                     "bg-red-600 hover:bg-red-700 text-white",
                     "transition-colors duration-200",
                     "disabled:opacity-50 disabled:cursor-not-allowed",

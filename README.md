@@ -67,15 +67,21 @@ In a terminal on your PC:
 opencode serve --hostname 127.0.0.1 --port 4096
 ```
 
-**Important**: This command starts OpenCode in headless mode (HTTP API only). The PWA will connect to this background service.
+**Important**: This starts OpenCode in headless mode (HTTP API only). The PWA will connect to this background service.
 
-**Optional**: If you want to use the OpenCode CLI interface simultaneously, run this instead:
+**Alternative**: To use the OpenCode CLI interface simultaneously:
 
 ```powershell
 opencode attach http://127.0.0.1:4096
 ```
 
-This links the PWA to the OpenCode CLI while keeping the HTTP API active. Changes made in the CLI (model/session selection) will be reflected in the PWA, though the two interfaces operate independently.
+This links the CLI to the running HTTP server, allowing you to:
+
+- Use the CLI interface on your PC
+- Control the same sessions from the PWA
+- Switch models/sessions in either interface
+
+**Note**: Changes made in CLI and PWA operate independently - they both connect to the same OpenCode backend but maintain separate UI state.
 
 ### Start Bridge Server
 

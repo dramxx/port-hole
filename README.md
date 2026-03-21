@@ -59,6 +59,8 @@ winget install OpenJS.NodeJS.LTS
 
 ## Running the App
 
+Install `wux` https://github.com/dramxx/wux to utilize `launch.bat`, or
+
 ### Start OpenCode HTTP Server
 
 In a terminal on your PC:

@@ -1,12 +1,13 @@
 import { CheckCircle, XCircle, Clock } from "lucide-react";
 import { clsx } from "clsx";
 import { useAppStore } from "../stores/appStore";
-import { useAPI } from "../hooks/useAPI";
+import { useSharedAPI } from "../hooks/useSharedAPI";
 
 export const ApprovalPanel = () => {
   const approvals = useAppStore((state) => state.approvals);
   const removeApproval = useAppStore((state) => state.removeApproval);
-  const { sendApproval } = useAPI();
+  const currentSessionId = useAppStore((state) => state.currentSessionId);
+  const { sendApproval } = useSharedAPI();
 
   const pendingApprovals = Array.from(approvals.values()).filter(
     (approval) => approval.status === "pending",
@@ -35,11 +36,25 @@ export const ApprovalPanel = () => {
   };
 
   if (pendingApprovals.length === 0) {
+    // Check if there are approvals for OTHER sessions
+    const otherSessionApprovals = Array.from(approvals.values()).filter(
+      (a) => a.status === "pending" && a.sessionId !== currentSessionId,
+    );
+    if (otherSessionApprovals.length > 0) {
+      return (
+        <div className="bg-orange-400/10 border-b border-orange-400/30 p-2">
+          <p className="text-xs text-orange-300 font-mono text-center">
+            {otherSessionApprovals.length} permission(s) waiting in other
+            session(s)
+          </p>
+        </div>
+      );
+    }
     return null;
   }
 
   return (
-    <div className="bg-yellow-400/10 border-b border-yellow-400/30 p-4 max-h-40 overflow-y-auto custom-scrollbar">
+    <div className="bg-yellow-400/10 border-b border-yellow-400/30 p-4 max-h-64 overflow-y-auto custom-scrollbar">
       <div className="space-y-3">
         {pendingApprovals.map((approval) => (
           <div

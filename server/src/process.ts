@@ -77,7 +77,13 @@ async function startOpenCode() {
 
   childProcess = spawn(
     "opencode",
-    ["serve", "--hostname", "127.0.0.1", "--port", "4096"],
+    [
+      "serve",
+      "--hostname",
+      process.env.OPENCODE_HOST || "127.0.0.1",
+      "--port",
+      process.env.OPENCODE_PORT || "4096",
+    ],
     { shell: true },
   );
 
@@ -121,4 +127,16 @@ async function startOpenCode() {
 
 export async function initialize() {
   await startOpenCode();
+}
+
+export function cleanup(): void {
+  if (childProcess) {
+    console.log("Cleaning up OpenCode process...");
+    childProcess.kill();
+    childProcess = null;
+  }
+  if (stableTimer) {
+    clearTimeout(stableTimer);
+    stableTimer = null;
+  }
 }

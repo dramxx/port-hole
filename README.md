@@ -2,6 +2,8 @@
 
 Control OpenCode running on your home PC from a modern React PWA, via a secure Tailscale tunnel. Send prompts, monitor agent activity in real time, resolve pending approvals — from anywhere.
 
+![alt text](image.png)
+
 ## Prerequisites
 
 ### What You Need
@@ -14,7 +16,7 @@ Control OpenCode running on your home PC from a modern React PWA, via a secure T
 
 #### 1. Disable PC Sleep
 
-Critical — if the PC sleeps, everything stops.
+If the PC sleeps, everything stops.
 
 1. Open **Settings → System → Power & Sleep**
 2. Set **Sleep** to **Never** for both battery and plugged in

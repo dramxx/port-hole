@@ -1,22 +1,21 @@
 import { useEffect, useRef } from "react";
 import { useAppStore } from "../stores/appStore";
-import { useAPI } from "../hooks/useAPI";
+import { useSharedAPI } from "../hooks/useSharedAPI";
 import { MessageList } from "./MessageList";
-import { ApprovalPanel } from "./ApprovalPanel";
 
 export const ChatInterface = () => {
-  const { fetchSessions, fetchMessages, isLoading, error } = useAPI();
+  const { fetchSessions, fetchMessages, isLoading, error } = useSharedAPI();
   const currentSessionId = useAppStore((state) => state.currentSessionId);
   const messages = useAppStore((state) => state.messages);
   const containerRef = useRef(null);
 
   useEffect(() => {
-    fetchSessions({ preferLatest: true });
+    fetchSessions();
   }, [fetchSessions]);
 
   useEffect(() => {
     const intervalId = window.setInterval(() => {
-      fetchSessions({ preferLatest: true });
+      fetchSessions();
     }, 3000);
 
     return () => {
@@ -77,7 +76,6 @@ export const ChatInterface = () => {
 
   return (
     <div ref={containerRef} className="h-full overflow-y-auto custom-scrollbar">
-      <ApprovalPanel />
       <MessageList />
       {/* Spacer to prevent content from being hidden behind prompt bar */}
       <div className="h-20"></div>

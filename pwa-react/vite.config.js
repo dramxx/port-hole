@@ -13,6 +13,7 @@ export default defineConfig({
       manifest: {
         name: 'port-hole',
         short_name: 'port-hole',
+        description: 'Control OpenCode from your phone via secure Tailscale tunnel',
         start_url: '/',
         display: 'standalone',
         background_color: '#0a0a0a',
@@ -21,12 +22,14 @@ export default defineConfig({
           {
             src: 'icon-192x192.png',
             sizes: '192x192',
-            type: 'image/png'
+            type: 'image/png',
+            purpose: 'any maskable'
           },
           {
             src: 'icon-512x512.png',
             sizes: '512x512',
-            type: 'image/png'
+            type: 'image/png',
+            purpose: 'any maskable'
           }
         ]
       }

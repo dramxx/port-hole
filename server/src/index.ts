@@ -9,6 +9,7 @@ import * as opencode from "./opencode";
 import * as store from "./store";
 import * as bridge from "./bridge";
 import { registerRoutes } from "./routes";
+import { stopKeepalive } from "./bridge";
 
 function getPermissionId(event: any): string | undefined {
   const properties = event?.properties ?? {};
@@ -30,7 +31,9 @@ function getSessionId(event: any): string | undefined {
     properties.info?.sessionId ??
     properties.info?.sessionID ??
     properties.part?.sessionId ??
-    properties.part?.sessionID
+    properties.part?.sessionID ??
+    properties.message?.sessionId ??
+    properties.message?.sessionID
   );
 }
 
@@ -94,6 +97,9 @@ function getTailscaleIP(): string | null {
   return null;
 }
 
+const CONNECTION_TIMEOUT_MS = 30_000;
+const KEEPALIVE_TIMEOUT_MS = 5_000;
+
 async function main() {
   // Wait for OpenCode to be ready
   await new Promise<void>((resolve, reject) => {
@@ -105,16 +111,30 @@ async function main() {
     processManager.initialize();
   });
 
-  // Create Fastify instance
-  const app = Fastify({ logger: false });
+  // Create Fastify instance with timeout configuration
+  const app = Fastify({
+    logger: false,
+    connectionTimeout: CONNECTION_TIMEOUT_MS,
+    keepAliveTimeout: KEEPALIVE_TIMEOUT_MS,
+  });
 
   // Register routes
   await registerRoutes(app);
 
-  // Wire event subscription
+  // Wire event subscription with error isolation
   opencode.subscribeToEvents((event: any) => {
-    store.appendEvent(event);
-    bridge.broadcast(event);
+    try {
+      store.appendEvent(event);
+    } catch (error) {
+      console.error("Failed to append event to store:", error);
+    }
+
+    try {
+      bridge.broadcast(event);
+    } catch (error) {
+      console.error("Failed to broadcast event:", error);
+    }
+
     if (event.type === "permission.asked") {
       const permissionId = getPermissionId(event);
       const sessionId = getSessionId(event);
@@ -124,11 +144,15 @@ async function main() {
         return;
       }
 
-      store.addPendingApproval({
-        permissionId,
-        sessionId,
-        description: getApprovalDescription(event),
-      });
+      try {
+        store.addPendingApproval({
+          permissionId,
+          sessionId,
+          description: getApprovalDescription(event),
+        });
+      } catch (error) {
+        console.error("Failed to add pending approval:", error);
+      }
       return;
     }
 
@@ -142,7 +166,9 @@ async function main() {
 
       try {
         store.resolveApproval(permissionId, resolution);
-      } catch {}
+      } catch (error) {
+        console.error("Failed to resolve approval:", error);
+      }
     }
   });
 
@@ -161,10 +187,15 @@ async function main() {
   }
 
   // Graceful shutdown
-  process.on("SIGINT", async () => {
+  const shutdown = async () => {
+    stopKeepalive();
+    processManager.cleanup();
+    store.cleanup();
     await app.close();
     process.exit(0);
-  });
+  };
+  process.on("SIGINT", shutdown);
+  process.on("SIGTERM", shutdown);
 }
 
 main().catch((error) => {

@@ -19,6 +19,7 @@ export interface ApprovalEntry {
 const eventLog: EventLogEntry[] = [];
 const approvalQueue = new Map<string, ApprovalEntry>();
 const MAX_EVENT_LOG_SIZE = 500;
+const APPROVAL_CLEANUP_DELAY_MS = 5 * 60 * 1000; // 5 minutes
 
 export function appendEvent(raw: object): EventLogEntry {
   const entry: EventLogEntry = {
@@ -64,10 +65,26 @@ export function resolveApproval(
   entry.status = "resolved";
   entry.resolution = resolution;
   entry.resolvedAt = Date.now();
+
+  // Clean up resolved approval after delay to allow late clients to see resolution
+  setTimeout(() => {
+    try {
+      approvalQueue.delete(permissionId);
+    } catch (error) {
+      console.error("Failed to clean up resolved approval:", error);
+    }
+  }, APPROVAL_CLEANUP_DELAY_MS);
 }
 
 export function getPendingApprovals(): ApprovalEntry[] {
   return Array.from(approvalQueue.values()).filter(
     (entry) => entry.status === "pending",
   );
+}
+
+// Cleanup function to prevent memory leaks
+export function cleanup(): void {
+  // Clear all stored data
+  eventLog.length = 0;
+  approvalQueue.clear();
 }

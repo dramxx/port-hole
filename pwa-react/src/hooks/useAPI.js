@@ -11,9 +11,12 @@ export const useAPI = () => {
   const setStatus = useAppStore((state) => state.setStatus)
   const setSessions = useAppStore((state) => state.setSessions)
   const setMessages = useAppStore((state) => state.setMessages)
-  const setCurrentSessionId = useAppStore((state) => state.setCurrentSessionId)
   const [isLoading, setIsLoading] = useState(false)
-  const [error, setError] = useState(null)
+  // Separate error states per operation to avoid overwrites
+  const [sessionError, setSessionError] = useState(null)
+  const [messageError, setMessageError] = useState(null)
+  const [promptError, setPromptError] = useState(null)
+  const [approvalError, setApprovalError] = useState(null)
   const messagesAbortRef = useRef(null)
   const messagesRequestRef = useRef(0)
 
@@ -21,7 +24,7 @@ export const useAPI = () => {
     async (sessionId) => {
       try {
         setIsLoading(true)
-        setError(null)
+        setMessageError(null)
 
         if (!sessionId) {
           setMessages([])
@@ -54,7 +57,7 @@ export const useAPI = () => {
         if (err?.name === 'AbortError') {
           return []
         }
-        setError(getErrorMessage(err, 'Failed to fetch messages'))
+        setMessageError(getErrorMessage(err, 'Failed to fetch messages'))
         return []
       } finally {
         setIsLoading(false)
@@ -63,12 +66,10 @@ export const useAPI = () => {
     [setMessages],
   )
 
-  const fetchSessions = useCallback(async (options = {}) => {
-    const { preferLatest = false } = options
-
+  const fetchSessions = useCallback(async () => {
     try {
       setIsLoading(true)
-      setError(null)
+      setSessionError(null)
 
       const response = await fetch('/api/sessions')
       if (!response.ok) {
@@ -76,56 +77,33 @@ export const useAPI = () => {
       }
 
       const sessions = await response.json()
-      const sortedSessions = [...sessions].sort(
-        (a, b) => getSessionUpdatedAt(b) - getSessionUpdatedAt(a),
+
+      // Filter out sessions older than 24 hours to prevent list bloat
+      const ONE_DAY_MS = 24 * 60 * 60 * 1000
+      const cutoffTime = Date.now() - ONE_DAY_MS
+      const recentSessions = sessions.filter((s) => {
+        const updatedAt = s.time?.updated || s.time?.created || s.updatedAt || 0
+        return updatedAt > cutoffTime
+      })
+
+      const sortedSessions = [...recentSessions].sort(
+        (a, b) => getSessionUpdatedAt(b) - getSessionUpdatedAt(a)
       )
 
       setSessions(sortedSessions)
-
-      if (sortedSessions.length === 0) {
-        setCurrentSessionId(null, 'auto')
-        setMessages([])
-        return []
-      }
-
-      const {
-        currentSessionId: currentSelectedId,
-        sessionSelectionMode,
-      } = useAppStore.getState()
-      const sessionExists = sortedSessions.some(
-        (session) => session.id === currentSelectedId,
-      )
-      let selectedSessionId = currentSelectedId
-      let selectedMode = sessionSelectionMode
-
-      if (!sessionExists) {
-        selectedSessionId = sortedSessions[0].id
-        selectedMode = 'auto'
-      } else if (preferLatest && sessionSelectionMode !== 'manual') {
-        selectedSessionId = sortedSessions[0].id
-        selectedMode = 'auto'
-      }
-
-      if (
-        selectedSessionId !== currentSelectedId ||
-        selectedMode !== sessionSelectionMode
-      ) {
-        setCurrentSessionId(selectedSessionId, selectedMode)
-      }
-
       return sortedSessions
     } catch (err) {
-      setError(getErrorMessage(err, 'Failed to fetch sessions'))
+      setSessionError(getErrorMessage(err, 'Failed to fetch sessions'))
       setStatus('error')
       return []
     } finally {
       setIsLoading(false)
     }
-  }, [setCurrentSessionId, setMessages, setSessions, setStatus])
+  }, [setSessions, setStatus])
 
   const sendPrompt = useCallback(async (sessionId, text) => {
     try {
-      setError(null)
+      setPromptError(null)
       const response = await fetch(`/api/sessions/${sessionId}/prompt`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -136,14 +114,14 @@ export const useAPI = () => {
       }
       return true
     } catch (err) {
-      setError(getErrorMessage(err, 'Failed to send prompt'))
+      setPromptError(getErrorMessage(err, 'Failed to send prompt'))
       return false
     }
   }, [])
 
   const sendApproval = useCallback(async (sessionId, permissionId, allow) => {
     try {
-      setError(null)
+      setApprovalError(null)
       if (!sessionId || !permissionId) {
         throw new Error('Missing approval identifiers')
       }
@@ -160,23 +138,7 @@ export const useAPI = () => {
       }
       return true
     } catch (err) {
-      setError(getErrorMessage(err, 'Failed to send approval'))
-      return false
-    }
-  }, [])
-
-  const abortSession = useCallback(async (sessionId) => {
-    try {
-      setError(null)
-      const response = await fetch(`/api/sessions/${sessionId}/abort`, {
-        method: 'POST',
-      })
-      if (!response.ok) {
-        throw new Error('Failed to abort session')
-      }
-      return true
-    } catch (err) {
-      setError(getErrorMessage(err, 'Failed to abort session'))
+      setApprovalError(getErrorMessage(err, 'Failed to send approval'))
       return false
     }
   }, [])
@@ -186,8 +148,7 @@ export const useAPI = () => {
     fetchMessages,
     sendPrompt,
     sendApproval,
-    abortSession,
     isLoading,
-    error,
+    error: sessionError || messageError || promptError || approvalError,
   }
 }

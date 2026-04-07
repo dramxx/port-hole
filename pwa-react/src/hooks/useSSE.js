@@ -2,35 +2,35 @@ import { useCallback, useEffect, useRef } from 'react'
 import { useAppStore } from '../stores/appStore'
 
 const getEventSessionId = (event) => {
-  const properties = event?.properties || {}
+  const properties = event?.properties ?? {}
 
   return (
-    properties.sessionId ||
-    properties.sessionID ||
-    properties.info?.sessionId ||
-    properties.info?.sessionID ||
-    properties.part?.sessionId ||
-    properties.part?.sessionID ||
-    properties.message?.sessionId ||
+    properties.sessionId ??
+    properties.sessionID ??
+    properties.info?.sessionId ??
+    properties.info?.sessionID ??
+    properties.part?.sessionId ??
+    properties.part?.sessionID ??
+    properties.message?.sessionId ??
     properties.message?.sessionID
   )
 }
 
 const getEventPermissionId = (event) => {
-  const properties = event?.properties || {}
+  const properties = event?.properties ?? {}
 
   return (
-    properties.permissionId ||
-    properties.permissionID ||
-    properties.requestId ||
-    properties.requestID ||
-    properties.id ||
+    properties.permissionId ??
+    properties.permissionID ??
+    properties.requestId ??
+    properties.requestID ??
+    properties.id ??
     properties.permission?.id
   )
 }
 
 const getApprovalDescription = (approvalOrEvent) => {
-  const properties = approvalOrEvent?.properties || approvalOrEvent || {}
+  const properties = approvalOrEvent?.properties ?? approvalOrEvent ?? {}
 
   if (
     typeof properties.description === 'string' &&
@@ -66,14 +66,14 @@ const normalizeApproval = (approval) => {
   }
 
   const permissionId =
-    approval.permissionId ||
-    approval.permissionID ||
-    approval.id ||
+    approval.permissionId ??
+    approval.permissionID ??
+    approval.id ??
     approval.permission?.id
   const sessionId =
-    approval.sessionId ||
-    approval.sessionID ||
-    approval.info?.sessionId ||
+    approval.sessionId ??
+    approval.sessionID ??
+    approval.info?.sessionId ??
     approval.info?.sessionID
 
   if (!permissionId) {
@@ -83,21 +83,23 @@ const normalizeApproval = (approval) => {
   return {
     ...approval,
     permissionId,
-    sessionId: sessionId || null,
+    sessionId: sessionId ?? null,
     description: getApprovalDescription(approval),
-    status: approval.status || 'pending',
-    timestamp: approval.timestamp || Date.now(),
+    status: approval.status ?? 'pending',
+    timestamp: approval.timestamp ?? Date.now(),
   }
 }
 
 export const useSSE = () => {
   const currentSessionId = useAppStore((state) => state.currentSessionId)
+  const setCurrentSessionId = useAppStore((state) => state.setCurrentSessionId)
   const setConnected = useAppStore((state) => state.setConnected)
   const setStatus = useAppStore((state) => state.setStatus)
   const setMessages = useAppStore((state) => state.setMessages)
   const setApproval = useAppStore((state) => state.setApproval)
   const setApprovals = useAppStore((state) => state.setApprovals)
   const removeApproval = useAppStore((state) => state.removeApproval)
+  const clearSession = useAppStore((state) => state.clearSession)
 
   const eventSourceRef = useRef(null)
   const refreshTimeoutRef = useRef(null)
@@ -186,7 +188,8 @@ export const useSSE = () => {
 
     setConnected(false)
     setStatus('disconnected')
-  }, [setConnected, setStatus])
+    clearSession() // Clear session on disconnect
+  }, [setConnected, setStatus, clearSession])
 
   useEffect(() => {
     const es = new EventSource('/stream')
@@ -235,6 +238,10 @@ export const useSSE = () => {
         return
       }
 
+      if (event.type?.includes?.('permission') && !permissionId) {
+        // Permission event without permissionId - ignore
+      }
+
       if (
         (event.type === 'permission.resolved' ||
           event.type === 'permission.replied') &&
@@ -245,6 +252,11 @@ export const useSSE = () => {
       }
 
       if (sessionId) {
+        // Auto-detect session from OpenCode events
+        if (!currentSessionIdRef.current || currentSessionIdRef.current !== sessionId) {
+          setCurrentSessionId(sessionId, 'auto')
+          currentSessionIdRef.current = sessionId
+        }
         scheduleRefresh(sessionId)
       }
     })
@@ -273,7 +285,10 @@ export const useSSE = () => {
     setApproval,
     setApprovals,
     setConnected,
+    setCurrentSessionId,
     setStatus,
+    clearSession,
+    currentSessionId, // Add to prevent stale closure
   ])
 
   return { disconnect }

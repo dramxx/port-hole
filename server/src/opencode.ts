@@ -7,6 +7,11 @@ dotenv.config({ path: path.join(__dirname, "..", "..", ".env") });
 
 const BASE_URL = `http://${process.env.OPENCODE_HOST}:${process.env.OPENCODE_PORT}`;
 
+// Reconnection configuration
+const RECONNECT_BASE_DELAY_MS = 1_000;
+const RECONNECT_MAX_DELAY_MS = 30_000;
+const RECONNECT_JITTER_FACTOR = 0.2;
+
 export class OpenCodeError extends Error {
   constructor(
     public status: number,
@@ -182,7 +187,16 @@ export function subscribeToEvents(
 ): () => void {
   let es: EventSource | null = null;
   let reconnectTimer: NodeJS.Timeout | null = null;
+  let reconnectAttempts = 0;
   let shouldReconnect = true;
+
+  function calculateBackoffDelay(): number {
+    // Exponential backoff: base * 2^attempts, with jitter
+    const exponentialDelay = RECONNECT_BASE_DELAY_MS * Math.pow(2, reconnectAttempts);
+    const cappedDelay = Math.min(exponentialDelay, RECONNECT_MAX_DELAY_MS);
+    const jitter = cappedDelay * RECONNECT_JITTER_FACTOR * Math.random();
+    return Math.floor(cappedDelay + jitter);
+  }
 
   function connect() {
     es = new EventSource(`${BASE_URL}/event`);
@@ -198,8 +212,13 @@ export function subscribeToEvents(
 
     es.onerror = () => {
       es?.close();
+      es = null;
+      
       if (shouldReconnect) {
-        reconnectTimer = setTimeout(connect, 1000);
+        const delay = calculateBackoffDelay();
+        console.log(`SSE connection lost, reconnecting in ${delay}ms (attempt ${reconnectAttempts + 1})`);
+        reconnectAttempts++;
+        reconnectTimer = setTimeout(connect, delay);
       }
     };
   }

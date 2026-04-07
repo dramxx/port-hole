@@ -1,7 +1,5 @@
 # port-hole — PROJECT.md
 
-> **Technical documentation for AI models working on this project**
-
 ## Project Overview
 
 port-hole is a remote control interface for OpenCode running on a home PC, accessible from an iPhone PWA via a secure Tailscale tunnel. It enables sending prompts, monitoring agent activity in real-time, and resolving pending approvals from anywhere.
@@ -88,17 +86,17 @@ port-hole/
 
 ### Key Endpoints
 
-| Method | Endpoint                                 | Purpose                              |
-| ------ | ---------------------------------------- | ------------------------------------ |
-| `GET`  | `/global/health`                         | Health check, version                |
-| `GET`  | `/event`                                 | SSE stream — all real-time events    |
-| `GET`  | `/session`                               | List all sessions                    |
-| `GET`  | `/session/:id`                           | Get session details                  |
-| `GET`  | `/session/:id/message`                   | Full message history for a session   |
-| `POST` | `/session/:id/message`                   | Send prompt, waits for full response |
-| `POST` | `/session/:id/prompt_async`              | Send prompt, returns 204 immediately |
-| `POST` | `/session/:id/permissions/:permissionID` | Approve or reject permission request |
-| `POST` | `/session/:id/abort`                     | Abort a running session              |
+| Method | Endpoint                                 | Purpose                                                 |
+| ------ | ---------------------------------------- | ------------------------------------------------------- |
+| `GET`  | `/global/health`                         | Health check, version                                   |
+| `GET`  | `/event`                                 | SSE stream — all real-time events                       |
+| `GET`  | `/session`                               | List all sessions                                       |
+| `GET`  | `/session/:id`                           | Get session details                                     |
+| `GET`  | `/session/:id/message`                   | Full message history for a session                      |
+| `POST` | `/session/:id/message`                   | Send prompt, waits for full response                    |
+| `POST` | `/session/:id/prompt_async`              | Send prompt, returns 204 immediately                    |
+| `POST` | `/session/:id/permissions/:permissionID` | Approve or reject permission request                    |
+| `POST` | `/session/:id/abort`                     | Abort a running session (endpoint exists, no UI button) |
 
 ### Request Payloads
 
@@ -204,7 +202,8 @@ OPENCODE_SERVER_PASSWORD=optional_password
 
 - Fixed positioning header with two rows:
   - **Row 1**: port-hole logo + connection status
-  - **Row 2**: Session selector + refresh button
+  - **Row 2**: Session display (read-only, auto-detected from OpenCode events)
+- Shows `< waiting for opencode >` until first message arrives
 - Always on top with `z-50`
 - Mobile-optimized responsive layout
 
@@ -212,7 +211,8 @@ OPENCODE_SERVER_PASSWORD=optional_password
 
 - Main interface container
 - Handles loading/error states
-- Renders ApprovalPanel, MessageList, PromptInput
+- Renders MessageList and PromptInput
+- Auto-scroll with user scroll detection
 
 #### `StatusIndicator.jsx`
 
@@ -228,9 +228,10 @@ OPENCODE_SERVER_PASSWORD=optional_password
 
 #### `ApprovalPanel.jsx`
 
-- Pending permission requests
+- Pending permission requests displayed in App.jsx
+- Shows warning banner for approvals in other sessions
 - Amber warning background
-- Allow/Deny buttons with queuing
+- Allow/Deny buttons
 - Auto-refresh elapsed time
 
 #### `PromptInput.jsx`
@@ -248,15 +249,10 @@ OPENCODE_SERVER_PASSWORD=optional_password
 isConnected: boolean
 status: 'disconnected' | 'connected' | 'reconnecting' | 'error'
 
-// Session state
+// Session state (auto-detected from OpenCode events)
 sessions: Session[]
 currentSessionId: string | null
-sessionSelectionMode: 'auto' | 'manual'
 messages: Message[]
-
-// Model state (planned - not implemented)
-// availableModels: Model[]
-// currentModelId: string | null
 
 // Approval state
 approvals: Map<string, Approval>
@@ -393,33 +389,37 @@ New-NetFirewallRule -DisplayName "port-hole Bridge" -Direction Inbound -Protocol
 
 ## Recent Updates
 
-### UI/UX Improvements
+### Architecture Changes
 
-- **OpenCode-style redesign**: Dark theme with purple accents and monospace fonts
-- **Mobile responsiveness**: Adaptive button sizes, hidden text labels, proper touch targets
-- **Layout fixes**: Sticky TopBar/PromptInput positioning, proper scroll behavior
-- **Two-row TopBar**: Logo/status on top, session selector on bottom for mobile
+- **Session auto-detection**: PWA extracts `sessionID` from OpenCode SSE events (`permission.asked`, `message.part.updated`) instead of manual selection
+- **No session persistence**: `currentSessionId` stored in Zustand only, cleared on disconnect via `clearSession()` action
+- **Transient state model**: All session data reset when SSE connection drops - no localStorage
 
-### Technical Fixes
+### API Client Architecture
 
-- **Live session pickup**: Auto-refresh sessions every 3 seconds
-- **Session selection**: Auto/manual selection modes with proper state management
-- **SSE handling**: Fixed history event processing to prevent raw log entries in messages
-- **API state**: Fragmented `useAPI()` instances (noted for future refactoring)
-- **Event log**: Capped at 500 entries to prevent memory growth
+- **Single source of truth**: OpenCode process manager (`process.ts`) spawns child process, monitors health
+- **SSE relay chain**: OpenCode → `opencode.subscribeToEvents()` → `store.appendEvent()` → `bridge.broadcast()` → PWA EventSource
+- **Message normalization**: `routes.ts` transforms OpenCode's nested `parts` structure to flat client format with role/timestamp extraction
+- **Approval flow**: Server receives `permission.asked` → `store.addPendingApproval()` → broadcast to all clients → PWA renders ApprovalPanel → user clicks → POST `/approve/:id` → OpenCode
+
+### State Management
+
+- **Zustand store structure**: Connection state (isConnected/status), Session state (sessions[]/currentSessionId/messages[]), Approval state (Map<permissionId, Approval>)
+- **No derived state**: Components compute `isWaiting` locally from `isWaitingForResponse && !sendError` instead of storing
+- **Ref pattern**: `currentSessionIdRef` used in SSE callbacks to avoid effect re-registration on every session change
+
+### Cleanup & Resource Management
+
+- **Server shutdown**: SIGINT/SIGTERM handlers call `stopKeepalive()`, `processManager.cleanup()` (kills child), `store.cleanup()` (clears Maps)
+- **Client disconnect**: SSE close triggers `clearSession()` which resets sessionId/messages/approvals/promptInput
+- **Session filtering**: Client filters sessions >24h old to prevent unbounded list growth
+- **Event log cap**: Server stores max 500 events in memory array, old entries evicted via `splice()`
 - **TypeScript**: Fixed backend type checking errors
-
-### Mobile PWA Features
-
-- **Responsive design**: Optimized for iPhone Safari with proper viewport handling
-- **Touch interface**: Appropriately sized buttons and touch targets
-- **PWA installation**: Home screen support with app icon and standalone mode
 
 ## Performance Notes
 
-- Event log stored in memory (resets on restart, capped at 500 entries)
-- SSE events broadcast to all connected clients
-- Mobile-optimized layout with adaptive sizing
-- Sticky positioning prevents layout shifts
-- Service worker for offline status updates
-- Auto-resize textarea prevents layout breaking
+- Event log stored in memory (resets on restart, capped at 500 entries via `splice(0, length - 500)`)
+- SSE events broadcast to all connected clients via `clients.forEach()` with stale client detection
+- Message deduplication: Client tracks `lastMessageCountRef` to detect new messages vs existing
+- Debounced refresh: 150ms delay in `scheduleRefresh()` to batch rapid SSE events
+- Connection lifecycle: EventSource auto-reconnects with exponential backoff (1s-30s)

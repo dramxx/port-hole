@@ -8,6 +8,9 @@ import * as process from "./process";
 
 const PWA_DIR = path.join(__dirname, "..", "..", "pwa-react", "dist");
 
+// Input validation constants
+const MAX_PROMPT_LENGTH = 100_000; // 100KB limit
+
 interface ClientMessagePart {
   type: "text" | "reasoning" | "tool";
   text?: string;
@@ -196,6 +199,7 @@ export async function registerRoutes(app: FastifyInstance): Promise<void> {
     async (req, reply) => {
       try {
         const { text } = req.body;
+        const sessionId = req.params.id;
 
         if (!text || typeof text !== "string" || text.trim() === "") {
           return reply
@@ -203,7 +207,22 @@ export async function registerRoutes(app: FastifyInstance): Promise<void> {
             .send({ error: "text is required and must be a non-empty string" });
         }
 
-        await opencode.sendPrompt(req.params.id, text);
+        if (text.length > MAX_PROMPT_LENGTH) {
+          return reply
+            .status(413)
+            .send({ error: `text exceeds maximum length of ${MAX_PROMPT_LENGTH} characters` });
+        }
+
+        // Validate session exists before sending
+        const sessions = await opencode.getSessions();
+        const sessionExists = sessions.some((s) => s.id === sessionId);
+        if (!sessionExists) {
+          return reply
+            .status(404)
+            .send({ error: "Session not found" });
+        }
+
+        await opencode.sendPrompt(sessionId, text);
         return reply.status(204).send();
       } catch (error: any) {
         if (error instanceof opencode.OpenCodeError) {

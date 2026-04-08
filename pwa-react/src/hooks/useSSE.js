@@ -288,7 +288,6 @@ export const useSSE = () => {
     setCurrentSessionId,
     setStatus,
     clearSession,
-    currentSessionId, // Add to prevent stale closure
   ])
 
   return { disconnect }

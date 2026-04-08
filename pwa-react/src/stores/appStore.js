@@ -27,6 +27,7 @@ function saveToStorage(data) {
 
 // Load persisted state
 const persistedState = loadFromStorage()
+const persistedSessionId = persistedState?.currentSessionId ?? null
 
 export const useAppStore = create(
   subscribeWithSelector((set, get) => ({
@@ -34,9 +35,9 @@ export const useAppStore = create(
     isConnected: false,
     status: 'disconnected',
 
-    // Session state - NO localStorage persistence, always start fresh
+    // Session state - restored from localStorage if available
     sessions: [],
-    currentSessionId: null,
+    currentSessionId: persistedSessionId,
     sessionSelectionMode: 'auto',
     messages: [],
 
@@ -54,7 +55,7 @@ export const useAppStore = create(
     setSessions: (sessions) => set({ sessions }),
     setCurrentSessionId: (id, mode = 'manual') => {
       set({ currentSessionId: id, sessionSelectionMode: mode })
-      // NO localStorage persistence - session is transient
+      saveToStorage({ currentSessionId: id })
     },
 
     setMessages: (messages) => set({ messages }),
@@ -85,6 +86,7 @@ export const useAppStore = create(
 
     // Reset actions - clear everything on disconnect/server restart
     clearSession: () => {
+      localStorage.removeItem(STORAGE_KEY)
       set({
         currentSessionId: null,
         sessionSelectionMode: 'auto',
